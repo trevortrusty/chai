@@ -1,19 +1,16 @@
 #include <iostream>
 #include <ncurses.h>
+#include <vector>
+#include "positionDisplay.h"
 
 int splash();
-
-// int digits(int x)
-// {
-//     return ((std::string)x).length();
-// }
-
-// void increaseLeftSpacing
 
 int main()
 {
     // Display Splash Screen
     // splash();
+    std::vector<std::string> lines;
+    std::string line = "";
 
     initscr();
     noecho();
@@ -34,12 +31,15 @@ int main()
 
     // Set variables for spacing
     int leftSpacing = 6;
-    int topSpacing = 2;
+    int topSpacing = 1;
 
     int numberOfLines = 1;
     int currentLine = 1;
     int currentChar = 1;
-
+    
+    WINDOW * pos = newwin(3, 20, maxY - 1, 4);
+    positionDisplay(pos, currentLine, currentChar);
+    wrefresh(pos);
     // Start line numbering
     mvprintw(topSpacing,1,"%*d ", 3, currentLine);
 
@@ -50,16 +50,70 @@ int main()
     {
         switch(c)
         {
+            // Handle up arrow
+            case KEY_UP:
+                if(currentLine > 1)
+                {
+                    currentLine--;
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                }
+                else
+                {
+                    currentChar = 1;
+                    move(topSpacing, leftSpacing);
+                }
+                break;
+            
+            case KEY_DOWN:
+                if(currentLine != numberOfLines)
+                {
+                    currentLine++;
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                }
+                else
+                {
+                    currentChar = 1;
+                    move(currentLine + topSpacing - 1, leftSpacing);
+                }
+                break;
+
+            case KEY_LEFT:
+                if(currentChar != 1)
+                {
+                    currentChar--;
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                }
+                else {
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                }
+                break;
+            
+            case KEY_RIGHT:
+                if(true)
+                {
+                    currentChar++;
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                }
+                break;
             // Handle enter key press, give new line proper left spacing
             case 10:
                 // Get cursor position and print line number to the next line
+                currentLine++;
+                currentChar = 1;
+                numberOfLines++;
                 getyx(stdscr, y, x);
-                mvprintw(y + 1, 1, "%*d", 3,  y + 1);
+                mvprintw(numberOfLines + topSpacing - 1, 1, "%*d", 3,  numberOfLines);
                 move(y + 1, leftSpacing);
                 break;
             default:
+                line = line + (char)c;
+                currentChar++;
                 printw("%c", (char)c);
         }
+        // wmove(pos, getcury(pos), getcurx(pos)-3);
+        wrefresh(pos);
+        positionDisplay(pos, currentLine, currentChar);
+        wrefresh(pos);
     }
     
 
