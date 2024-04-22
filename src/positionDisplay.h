@@ -3,6 +3,6 @@
 
 #include <ncurses.h>
 
-int positionDisplay(WINDOW * win, int cursorY, int cursorX);
+int positionDisplay(WINDOW * win, WINDOW * editor, int cursorY, int cursorX);
 
 #endif

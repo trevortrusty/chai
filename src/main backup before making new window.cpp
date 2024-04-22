@@ -7,16 +7,10 @@ int splash();
 
 int main()
 {
-    initscr();
-    getch();
-    noecho();
-    // cbreak();
-    keypad(stdscr, true);
-    move(0,0);
     int exit_condition = 0;
 
     // Display Splash Screen
-    // splash();
+    splash();
 
     std::vector<std::string> lines;
     std::string line = "";
@@ -24,19 +18,24 @@ int main()
     // initialize first empty line
     lines.push_back(line);
 
-
+    initscr();
+    noecho();
+    cbreak();
+    keypad(stdscr, true);
 
     // Get screen dimensions
     int maxY, maxX;
     getmaxyx(stdscr, maxY, maxX);
 
-    WINDOW *editor = newwin(maxY - 3, maxX - 3, 1, 1);
-    // box(editor, 0, 0);
-    wrefresh(editor);
+    WINDOW * editor = newwin(maxY - 3, maxX - 3, 1, 1);
 
     // Initialize cursor position
     int y, x;
     y = x = 0;
+
+    // Input character
+    char ch;
+    int c;
 
     // Set variables for spacing
     int leftSpacing = 6;
@@ -47,23 +46,18 @@ int main()
     int currentChar = 1;
     
     // Enable scrolling
-    scrollok(editor, TRUE);
-    wsetscrreg(editor, topSpacing, maxY - 1);
-    // idlok(editor, TRUE);
+    scrollok(stdscr, TRUE);
+    setscrreg(topSpacing, maxY);
+    idlok(stdscr, TRUE);
 
-    WINDOW * pos = newwin(3, 100, maxY - 1, 4);
-    positionDisplay(pos, editor, currentLine, currentChar);
+    WINDOW * pos = newwin(3, 20, maxY - 1, 4);
+    positionDisplay(pos, currentLine, currentChar);
     wrefresh(pos);
-
     // Start line numbering
-    mvwprintw(editor, topSpacing,1,"%*d ", 3, currentLine);
-    wrefresh(editor);
-    // Start text input with a bit of a left + top margin
-    wmove(editor, topSpacing, leftSpacing);
+    mvprintw(topSpacing,1,"%*d ", 3, currentLine);
 
-    // Input character
-    char ch;
-    int c;
+    // Start text input with a bit of a left + top margin
+    move(topSpacing, leftSpacing);
 
     while(exit_condition == 0 && (c = getch()))
     {
@@ -80,10 +74,10 @@ int main()
                     if(currentChar > lines[currentLine - 1].length())
                     {
                         currentChar = lines[currentLine - 1].length() + 1;
-                        wmove(editor, currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
+                        move(currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
                     }
                     else {
-                        wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                        move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
                     }
                     line = lines[currentLine - 1];
                 }
@@ -91,7 +85,7 @@ int main()
                 {
                     // Can't move up any farther, move cursor to beginning of current line
                     currentChar = 1;
-                    wmove(editor, topSpacing, leftSpacing);
+                    move(topSpacing, leftSpacing);
                 }
                 break;
             
@@ -105,10 +99,10 @@ int main()
                     if(currentChar > lines[currentLine - 1].length())
                     {
                         currentChar = lines[currentLine - 1].length() + 1;
-                        wmove(editor, currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
+                        move(currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
                     }
                     else {
-                        wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                        move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
                     }
                     line = lines[currentLine - 1];
                 }
@@ -116,7 +110,7 @@ int main()
                 {
                     // Can't move down any farther, move cursor to beginning of current line
                     currentChar = 1;
-                    wmove(editor, currentLine + topSpacing - 1, leftSpacing);
+                    move(currentLine + topSpacing - 1, leftSpacing);
                 }
                 break;
 
@@ -124,10 +118,10 @@ int main()
                 if(currentChar != 1)
                 {
                     currentChar--;
-                    wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
                 }
                 else {
-                    wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
                 }
                 break;
             
@@ -135,7 +129,7 @@ int main()
                 if(currentChar <= line.length())
                 {
                     currentChar++;
-                    wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
                 }
                 break;
             // Handle enter key press, give new line proper left spacing
@@ -143,11 +137,9 @@ int main()
                 // Get cursor position and print line number to the next line
                 lines[currentLine - 1] = line;
                 line = "";
-                getyx(editor, y, x);
-                int editorMaxY, editorMaxX;
-                getmaxyx(editor, editorMaxY, editorMaxX);
+                getyx(stdscr, y, x);
 
-                if(currentLine < editorMaxY)
+                if(currentLine < maxY)
                 {
                     if(currentLine == numberOfLines)
                     {
@@ -160,35 +152,13 @@ int main()
                     currentLine++;
                     currentChar = 1;
                     numberOfLines++;
-                    getyx(editor, y, x);
-                    mvwprintw(editor, numberOfLines + topSpacing - 1, 1, "%*d", 3,  numberOfLines);
-                    wrefresh(editor);
-                    wmove(editor, y + 1, leftSpacing);
+                    getyx(stdscr, y, x);
+                    mvprintw(numberOfLines + topSpacing - 1, 1, "%*d", 3,  numberOfLines);
+                    refresh();
+                    move(y + 1, leftSpacing);
                 }
                 else {
-                    
-                    // wrefresh(editor);
-                    // wclrtoeol(editor);
-                    if(currentLine == numberOfLines)
-                    {
-                        lines.push_back(line);
-                    }
-                    else {
-                        lines.insert(lines.begin() + (currentLine + 1), line);
-                    }
 
-                    currentLine++;
-                    currentChar = 1;
-                    numberOfLines++;
-                    // getyx(editor, y, x);
-                    
-                    // wrefresh(editor);
-                    wscrl(editor, 1); // Scroll the window down by one line
-                    mvwprintw(editor, editorMaxY - 1, 1, "%*d", 3,  numberOfLines);
-                    getyx(editor, y, x);
-                    wrefresh(editor);
-                    wmove(editor, y, leftSpacing);
-                    
                 }
                 break;
             
@@ -201,26 +171,16 @@ int main()
                 line.insert(line.begin() + currentChar - 1, (char)c);
                 currentChar++;
                 // printw("%c", (char)c);
-                winsch(editor, (char)c);
-                wrefresh(editor);
-                getyx(editor, y, x);
-                wmove(editor, y, x + 1);
+                insch((char)c);
+                getyx(stdscr, y, x);
+                move(y, x + 1);
         }
         // wmove(pos, getcury(pos), getcurx(pos)-3);
-        // wrefresh(pos);
-        positionDisplay(pos, editor, currentLine, currentChar);
         wrefresh(pos);
-        wrefresh(editor);
+        positionDisplay(pos, currentLine, currentChar);
+        wrefresh(pos);
     }
-    // Clean up
-    delwin(editor);
-    delwin(pos);
+    
     endwin();
-
-    for(int i = 0; i < lines.size(); i++)
-    {
-        std::cout << lines[i] << std::endl;
-    }
-    getch();
     return 0;
 }

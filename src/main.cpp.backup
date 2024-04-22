@@ -10,7 +10,8 @@ int main()
     int exit_condition = 0;
 
     // Display Splash Screen
-    // splash();
+    splash();
+
     std::vector<std::string> lines;
     std::string line = "";
 
@@ -25,7 +26,7 @@ int main()
     // Get screen dimensions
     int maxY, maxX;
     getmaxyx(stdscr, maxY, maxX);
-    
+
     // Initialize cursor position
     int y, x;
     y = x = 0;
@@ -36,12 +37,17 @@ int main()
 
     // Set variables for spacing
     int leftSpacing = 6;
-    int topSpacing = 1;
+    int topSpacing = 0;
 
     int numberOfLines = 1;
     int currentLine = 1;
     int currentChar = 1;
     
+    // Enable scrolling
+    scrollok(stdscr, TRUE);
+    setscrreg(topSpacing, maxY);
+    idlok(stdscr, TRUE);
+
     WINDOW * pos = newwin(3, 20, maxY - 1, 4);
     positionDisplay(pos, currentLine, currentChar);
     wrefresh(pos);
@@ -51,41 +57,72 @@ int main()
     // Start text input with a bit of a left + top margin
     move(topSpacing, leftSpacing);
 
-    while((c = getch()) && exit_condition == 0)
+    while(exit_condition == 0 && (c = getch()))
     {
         switch(c)
         {
             // Handle up arrow
             case KEY_UP:
+                lines[currentLine - 1] = line;
                 if(currentLine > 1)
                 {
                     currentLine--;
-                    if(line.length() > lines[currentLine - 1].length())
+                    // Check if the previous line up is shorter than the current line. 
+                    // If it is shorter, cursor moves to end of the previous line in order to stay in bounds
+                    if(currentChar > lines[currentLine - 1].length())
                     {
-                        currentChar = lines[currentLine - 1].length();
-                        move(currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing - 1);
+                        currentChar = lines[currentLine - 1].length() + 1;
+                        move(currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
                     }
                     else {
                         move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
                     }
                     line = lines[currentLine - 1];
+
+                    // Get curor pos + window size, if cursor at top of visible window then scroll
+                    getyx(stdscr, y, x);
+                    getmaxyx(stdscr, maxY, maxX);
+                    if(y <= topSpacing)
+                    {
+                        wscrl(stdscr, -1); // Scroll the window up by one line                            
+                    }
                 }
                 else
                 {
+                    // Can't move up any farther, move cursor to beginning of current line
                     currentChar = 1;
                     move(topSpacing, leftSpacing);
                 }
                 break;
             
             case KEY_DOWN:
+                lines[currentLine - 1] = line;
                 if(currentLine != numberOfLines)
                 {
                     currentLine++;
-                    move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    // Check if the next line down is shorter than the current line. 
+                    // If it is shorter, cursor moves to end of the next line in order to stay in bounds
+                    if(currentChar > lines[currentLine - 1].length())
+                    {
+                        currentChar = lines[currentLine - 1].length() + 1;
+                        move(currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
+                    }
+                    else {
+                        move(currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    }
                     line = lines[currentLine - 1];
+
+                    // Get curor pos + window size, if cursor at bottom then scroll
+                    getyx(stdscr, y, x);
+                    getmaxyx(stdscr, maxY, maxX);
+                    if(y >= maxY)
+                    {
+                        wscrl(stdscr, 1); // Scroll the window down by one line                            
+                    }
                 }
                 else
                 {
+                    // Can't move down any farther, move cursor to beginning of current line
                     currentChar = 1;
                     move(currentLine + topSpacing - 1, leftSpacing);
                 }
@@ -118,6 +155,14 @@ int main()
                 if(lines.size() == numberOfLines)
                 {
                     lines.push_back(line);
+
+                    // Get curor pos + window size, if cursor at bottom then scroll
+                    getyx(stdscr, y, x);
+                    getmaxyx(stdscr, maxY, maxX);
+                    if(y >= maxY - 1)
+                    {
+                        wscrl(stdscr, 1); // Scroll the window down by one line                            
+                    }
                 }
                 else {
                     lines.insert(lines.begin() + (currentLine + 1), line);
@@ -130,6 +175,7 @@ int main()
                 numberOfLines++;
                 getyx(stdscr, y, x);
                 mvprintw(numberOfLines + topSpacing - 1, 1, "%*d", 3,  numberOfLines);
+                refresh();
                 move(y + 1, leftSpacing);
                 break;
             
@@ -152,136 +198,6 @@ int main()
         wrefresh(pos);
     }
     
-
-    getch();
     endwin();
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

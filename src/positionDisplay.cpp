@@ -1,11 +1,15 @@
 #include <ncurses.h>
 #include <string>
 
-int positionDisplay(WINDOW * win, int cursorY, int cursorX)
+int positionDisplay(WINDOW * win, WINDOW * editor, int cursorY, int cursorX)
 {
+    int scrY, scrX, maxY, maxX;
+    getyx(editor, scrY, scrX);
+    getmaxyx(editor, maxY, maxX);
     // WINDOW * pos = newwin(3, 3, maxY - 20, 4);
     wclrtoeol(win); // Clear the entire line
-    std::string positionText = std::to_string(cursorY) + "," + std::to_string(cursorX);
+    box(win, 0, 0);
+    std::string positionText = std::to_string(cursorY) + "," + std::to_string(cursorX) + "          " + std::to_string(scrY) + ", " + std::to_string(scrX) + "          " + std::to_string(maxY) + ", " + std::to_string(maxX);
     // wprintw(win, "%d,%d", cursorY, cursorX);
     wprintw(win, positionText.c_str());
     wrefresh(win);
