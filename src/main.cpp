@@ -27,7 +27,7 @@ int main()
 
 
     // Get screen dimensions
-    int maxY, maxX;
+    int maxY, maxX, winMaxY, winMaxX;
     getmaxyx(stdscr, maxY, maxX);
 
     WINDOW *editor = newwin(maxY - 3, maxX - 3, 1, 1);
@@ -45,14 +45,15 @@ int main()
     int numberOfLines = 1;
     int currentLine = 1;
     int currentChar = 1;
-    
+    int topLine = 1; // Keep track of the top visible line when scrolling
+
     // Enable scrolling
     scrollok(editor, TRUE);
     wsetscrreg(editor, topSpacing, maxY - 1);
     // idlok(editor, TRUE);
 
     WINDOW * pos = newwin(3, 100, maxY - 1, 4);
-    positionDisplay(pos, editor, currentLine, currentChar);
+    positionDisplay(pos, editor, currentLine, currentChar, topLine);
     wrefresh(pos);
 
     // Start line numbering
@@ -72,51 +73,117 @@ int main()
             // Handle up arrow
             case KEY_UP:
                 lines[currentLine - 1] = line;
-                if(currentLine > 1)
+                if(currentLine > topLine)
                 {
-                    currentLine--;
-                    // Check if the previous line up is shorter than the current line. 
-                    // If it is shorter, cursor moves to end of the previous line in order to stay in bounds
-                    if(currentChar > lines[currentLine - 1].length())
+                    if(currentLine > 1)
                     {
-                        currentChar = lines[currentLine - 1].length() + 1;
-                        wmove(editor, currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
+                        currentLine--;
+                        // Check if the previous line up is shorter than the current line. 
+                        // If it is shorter, cursor moves to end of the previous line in order to stay in bounds
+                        if(currentChar > lines[currentLine - 1].length())
+                        {
+                            currentChar = lines[currentLine - 1].length() + 1;
+                            wmove(editor, currentLine + topSpacing - topLine, lines[currentLine - 1].length() + leftSpacing);
+                        }
+                        else {
+                            wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
+                        }
+                        line = lines[currentLine - 1];
                     }
-                    else {
-                        wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    else
+                    {
+                        // Can't move up any farther, move cursor to beginning of current line
+                        currentChar = 1;
+                        wmove(editor, currentLine + topSpacing - topLine, leftSpacing);
                     }
-                    line = lines[currentLine - 1];
                 }
-                else
-                {
-                    // Can't move up any farther, move cursor to beginning of current line
-                    currentChar = 1;
-                    wmove(editor, topSpacing, leftSpacing);
+                else {
+                    if(currentLine > 1)
+                    {
+                        topLine--;
+                        wscrl(editor, -1); // Scroll the window up by one line
+                        currentLine--;
+
+                        // After scrolling up, reprint line number and the text belonging to that line
+                        mvwprintw(editor, currentLine + topSpacing - topLine, 1, "%*d  %s", 3,  currentLine, lines[currentLine - 1].c_str());
+                        //mvwprintw(editor, currentLine + topSpacing - topLine, leftSpacing, lines[currentLine].c_str());
+
+                        // Check if the previous line up is shorter than the current line. 
+                        // If it is shorter, cursor moves to end of the previous line in order to stay in bounds
+                        if(currentChar > lines[currentLine - 1].length())
+                        {
+                            currentChar = lines[currentLine - 1].length() + 1;
+                            wmove(editor, currentLine + topSpacing - topLine, lines[currentLine - 1].length() + leftSpacing);
+                        }
+                        else {
+                            wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
+                        }
+                        line = lines[currentLine - 1];
+                    }
+                    else
+                    {
+                        // Can't move up any farther, move cursor to beginning of current line
+                        currentChar = 1;
+                        wmove(editor, topSpacing, leftSpacing);
+                    }
                 }
                 break;
-            
+                
             case KEY_DOWN:
                 lines[currentLine - 1] = line;
-                if(currentLine != numberOfLines)
+                getmaxyx(editor, winMaxY, winMaxX);
+                if(currentLine < winMaxY)
                 {
-                    currentLine++;
-                    // Check if the next line down is shorter than the current line. 
-                    // If it is shorter, cursor moves to end of the next line in order to stay in bounds
-                    if(currentChar > lines[currentLine - 1].length())
+                    if(currentLine != numberOfLines)
                     {
-                        currentChar = lines[currentLine - 1].length() + 1;
-                        wmove(editor, currentLine + topSpacing - 1, lines[currentLine - 1].length() + leftSpacing);
+                        currentLine++;
+                        // Check if the next line down is shorter than the current line. 
+                        // If it is shorter, cursor moves to end of the next line in order to stay in bounds
+                        if(currentChar > lines[currentLine - 1].length())
+                        {
+                            currentChar = lines[currentLine - 1].length() + 1;
+                            wmove(editor, currentLine + topSpacing - topLine, lines[currentLine - 1].length() + leftSpacing);
+                        }
+                        else {
+                            wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
+                        }
+                        line = lines[currentLine - 1];
                     }
-                    else {
-                        wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    else
+                    {
+                        // Can't move down any farther, move cursor to beginning of current line
+                        currentChar = 1;
+                        wmove(editor, currentLine + topSpacing - topLine, leftSpacing);
                     }
-                    line = lines[currentLine - 1];
                 }
-                else
-                {
-                    // Can't move down any farther, move cursor to beginning of current line
-                    currentChar = 1;
-                    wmove(editor, currentLine + topSpacing - 1, leftSpacing);
+                else {
+                    if(currentLine != numberOfLines)
+                    {
+                        topLine++;
+                        wscrl(editor, 1); // Scroll the window up by one line
+                        currentLine++;
+
+                        // After scrolling up, reprint line number and the text belonging to that line
+                        mvwprintw(editor, currentLine + topSpacing - topLine, 1, "%*d  %s", 3,  currentLine, lines[currentLine - 1].c_str());
+       
+                        // Check if the next line down is shorter than the current line. 
+                        // If it is shorter, cursor moves to end of the next line in order to stay in bounds
+                        if(currentChar > lines[currentLine - 1].length())
+                        {
+                            currentChar = lines[currentLine - 1].length() + 1;
+                            wmove(editor, currentLine + topSpacing - topLine, lines[currentLine - 1].length() + leftSpacing);
+                        }
+                        else {
+                            wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
+                        }
+                        line = lines[currentLine - 1];
+                    }
+                    else
+                    {
+                        // Can't move down any farther, move cursor to beginning of current line
+                        currentChar = 1;
+                        wmove(editor, currentLine + topSpacing - topLine, leftSpacing);
+                    }                   
                 }
                 break;
 
@@ -124,10 +191,10 @@ int main()
                 if(currentChar != 1)
                 {
                     currentChar--;
-                    wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
                 }
                 else {
-                    wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
                 }
                 break;
             
@@ -135,7 +202,7 @@ int main()
                 if(currentChar <= line.length())
                 {
                     currentChar++;
-                    wmove(editor, currentLine + topSpacing - 1, currentChar + leftSpacing - 1);
+                    wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
                 }
                 break;
             // Handle enter key press, give new line proper left spacing
@@ -147,6 +214,7 @@ int main()
                 int editorMaxY, editorMaxX;
                 getmaxyx(editor, editorMaxY, editorMaxX);
 
+                // Checks if space is available on the visible screen to start new line
                 if(currentLine < editorMaxY)
                 {
                     if(currentLine == numberOfLines)
@@ -165,6 +233,7 @@ int main()
                     wrefresh(editor);
                     wmove(editor, y + 1, leftSpacing);
                 }
+                // If no space left in window for a new line, scroll window down.
                 else {
                     
                     // wrefresh(editor);
@@ -183,6 +252,7 @@ int main()
                     // getyx(editor, y, x);
                     
                     // wrefresh(editor);
+                    topLine++; // update which line is seen at the top of the window
                     wscrl(editor, 1); // Scroll the window down by one line
                     mvwprintw(editor, editorMaxY - 1, 1, "%*d", 3,  numberOfLines);
                     getyx(editor, y, x);
@@ -208,7 +278,7 @@ int main()
         }
         // wmove(pos, getcury(pos), getcurx(pos)-3);
         // wrefresh(pos);
-        positionDisplay(pos, editor, currentLine, currentChar);
+        positionDisplay(pos, editor, currentLine, currentChar, topLine);
         wrefresh(pos);
         wrefresh(editor);
     }
