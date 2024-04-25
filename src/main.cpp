@@ -2,13 +2,14 @@
 #include <ncurses.h>
 #include <vector>
 #include "positionDisplay.h"
+#include <string>
 
 int splash();
 
-int main()
+int main(int argc, char **argv[])
 {
     initscr();
-    getch();
+    // getch();
     noecho();
     // cbreak();
     keypad(stdscr, true);
@@ -16,7 +17,16 @@ int main()
     int exit_condition = 0;
 
     // Display Splash Screen
-    // splash();
+    if(argc == 1)
+    {
+        splash();
+    }
+    else {
+        timeout(200);
+        getch();
+        timeout(-1);
+    }
+    
 
     std::vector<std::string> lines;
     std::string line = "";
@@ -46,6 +56,8 @@ int main()
     int currentLine = 1;
     int currentChar = 1;
     int topLine = 1; // Keep track of the top visible line when scrolling
+    int printToLine;
+    std::string substringUpToEnter, substrAfterEnter;
 
     // Enable scrolling
     scrollok(editor, TRUE);
@@ -208,8 +220,12 @@ int main()
             // Handle enter key press, give new line proper left spacing
             case 10:
                 // Get cursor position and print line number to the next line
-                lines[currentLine - 1] = line;
-                line = "";
+                // lines[currentLine - 1] = line;
+                substringUpToEnter = line.substr(0,currentChar - 1);
+                substrAfterEnter = line.substr(currentChar - 1);
+                lines[currentLine - 1] = substringUpToEnter;
+                // line = "";
+                line = substrAfterEnter;
                 getyx(editor, y, x);
                 int editorMaxY, editorMaxX;
                 getmaxyx(editor, editorMaxY, editorMaxX);
@@ -222,7 +238,8 @@ int main()
                         lines.push_back(line);
                     }
                     else {
-                        lines.insert(lines.begin() + (currentLine + 1), line);
+                        // lines.insert(lines.begin() + (currentLine + 1), line);
+                        lines.insert(lines.begin() + (currentLine), line);
                     }
                     
                     currentLine++;
@@ -243,7 +260,8 @@ int main()
                         lines.push_back(line);
                     }
                     else {
-                        lines.insert(lines.begin() + (currentLine + 1), line);
+                        // lines.insert(lines.begin() + (currentLine + 1), line);
+                        lines.insert(lines.begin() + (currentLine), line);
                     }
 
                     currentLine++;
@@ -254,12 +272,22 @@ int main()
                     // wrefresh(editor);
                     topLine++; // update which line is seen at the top of the window
                     wscrl(editor, 1); // Scroll the window down by one line
-                    mvwprintw(editor, editorMaxY - 1, 1, "%*d", 3,  numberOfLines);
+                    // mvwprintw(editor, editorMaxY - 1, 1, "%*d", 3,  numberOfLines);
                     getyx(editor, y, x);
                     wrefresh(editor);
                     wmove(editor, y, leftSpacing);
-                    
                 }
+                wmove(editor, y, leftSpacing);
+                wclrtoeol(editor);
+                wclrtobot(editor);
+                printToLine = numberOfLines < winMaxY ? numberOfLines : winMaxY;
+                for(int i = y - 1; i < printToLine; i++)
+                {
+                    mvwprintw(editor, i, 1, "%*d  %s", 3,  i + 1, lines[i].c_str());
+                }
+                wrefresh(editor);
+                // currentChar = lines[currentLine - 1].length() + 1;
+                wmove(editor, currentLine + topSpacing - topLine, currentChar + leftSpacing - 1);
                 break;
             
             case KEY_F(8):
@@ -268,6 +296,7 @@ int main()
 
             default:
                 // line = line + (char)c;
+                getmaxyx(editor, winMaxY, winMaxX);
                 line.insert(line.begin() + currentChar - 1, (char)c);
                 currentChar++;
                 // printw("%c", (char)c);
@@ -275,6 +304,7 @@ int main()
                 wrefresh(editor);
                 getyx(editor, y, x);
                 wmove(editor, y, x + 1);
+                lines[currentLine - 1] = line;
         }
         // wmove(pos, getcury(pos), getcurx(pos)-3);
         // wrefresh(pos);
