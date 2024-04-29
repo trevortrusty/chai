@@ -275,9 +275,24 @@ void keyBackspace(WINDOW * editor, Screen &Screen, std::vector<std::string> &lin
         wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
     }
     else {
-        // printf("\a"); // terminal beep/sound
         beep();
     }
+}
+
+void keyTab(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+{
+    getmaxyx(editor, Screen.winMaxY, Screen.winMaxX);
+    line.insert(line.begin() + Screen.currentChar - 1, 4, ' '); // 4 Spaces
+    Screen.currentChar += 4;
+    // printw("%c", (char)c);
+    for(int i = 0; i < 4; ++i)
+    {
+        winsch(editor, ' ');
+    }
+    wrefresh(editor);
+    getyx(editor, Screen.curY, Screen.curX);
+    wmove(editor, Screen.curY, Screen.curX + 4);
+    lines[Screen.currentLine - 1] = line;
 }
 
 int main(int argc, char **argv[])
@@ -376,6 +391,9 @@ int main(int argc, char **argv[])
                 break;
             case KEY_BACKSPACE:
                 keyBackspace(editor, Screen, lines, line);
+                break;
+            case '\t':
+                keyTab(editor, Screen, lines, line);
                 break;
             // Handle enter key press, give new line proper left spacing
             case 10:
