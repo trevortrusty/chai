@@ -21,6 +21,12 @@ struct Screen
     int printToLine;        // Keeps track of where to stop reprinting lines, when a reprint is necessary
 };
 
+// Text editor line numbering starts at 1, this function takes a line number and makes it compatible with zero-based indexing
+int zeroBased(int indexToChange)
+{
+    return indexToChange - 1;
+}
+
 void keyUp(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
 {
     lines[Screen.currentLine - 1] = line;
@@ -270,6 +276,7 @@ int main(int argc, char **argv[])
     }
     
 
+    // Create a char matrix to store all input
     std::vector<std::string> lines;
     std::string line = "";
 
