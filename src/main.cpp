@@ -4,22 +4,23 @@
 #include <string>
 #include "positionDisplay.h"
 #include "splash.h"
+#include "Screen.h"
 
 const int TOP_SPACING = 0;
 const int LEFT_SPACING = 6;
 
-struct Screen
-{
-    int maxY, maxX;         // Max cursor positions for entire terminal (stdscr)
-    int winMaxY, winMaxX;   // Max cursor positions for just the editor window
+// struct Screen
+// {
+//     int maxY, maxX;         // Max cursor positions for entire terminal (stdscr)
+//     int winMaxY, winMaxX;   // Max cursor positions for just the editor window
 
-    int curY, curX;
-    int numberOfLines = 1;  // Number of lines that have been created/exist by the user
-    int currentLine = 1;    // Line the cursor is on within the text editor
-    int currentChar = 1;    // Char/space the cursor is on within the line
-    int topLine = 1;        // Keeps track of the top visible line when scrolling
-    int printToLine;        // Keeps track of where to stop reprinting lines, when a reprint is necessary
-};
+//     int curY, curX;
+//     int numberOfLines = 1;  // Number of lines that have been created/exist by the user
+//     int currentLine = 1;    // Line the cursor is on within the text editor
+//     int currentChar = 1;    // Char/space the cursor is on within the line
+//     int topLine = 1;        // Keeps track of the top visible line when scrolling
+//     int printToLine;        // Keeps track of where to stop reprinting lines, when a reprint is necessary
+// };
 
 // Text editor line numbering starts at 1, this function takes a line number and makes it compatible with zero-based indexing
 int zeroBased(int indexToChange)
@@ -253,6 +254,32 @@ void keyCharPrint(WINDOW * editor, Screen &Screen, std::vector<std::string> &lin
     lines[Screen.currentLine - 1] = line;
 }
 
+void keyBackspace(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+{
+    if(Screen.currentChar > 1)
+    {
+        // Screen.currentChar--;
+        // wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
+        // wclrtobot(editor);
+        // line.pop_back();
+        // lines[Screen.currentLine - 1].pop_back();
+        Screen.currentChar--;
+        line.erase(Screen.currentChar - 1, 1);
+        lines[Screen.currentLine - 1].erase(Screen.currentChar - 1, 1);
+        wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, LEFT_SPACING);
+        wclrtoeol(editor);
+
+        mvwprintw(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, 1, "%*d  %s", 3,  Screen.currentLine, lines[Screen.currentLine - 1].c_str());
+        wrefresh(editor);
+        
+        wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
+    }
+    else {
+        // printf("\a"); // terminal beep/sound
+        beep();
+    }
+}
+
 int main(int argc, char **argv[])
 {
     Screen Screen;
@@ -314,7 +341,7 @@ int main(int argc, char **argv[])
     // idlok(editor, TRUE);
 
     WINDOW * pos = newwin(3, 100, Screen.maxY - 1, 4);
-    positionDisplay(pos, editor, Screen.currentLine, Screen.currentChar, Screen.topLine);
+    positionDisplay(pos, editor, Screen, Screen.currentLine, Screen.currentChar, Screen.topLine);
     wrefresh(pos);
 
     // Start line numbering
@@ -347,6 +374,9 @@ int main(int argc, char **argv[])
             case KEY_RIGHT:
                 keyRight(editor, Screen, lines, line);
                 break;
+            case KEY_BACKSPACE:
+                keyBackspace(editor, Screen, lines, line);
+                break;
             // Handle enter key press, give new line proper left spacing
             case 10:
                 keyEnter(editor, Screen, lines, line, substringUpToEnter, substrAfterEnter);
@@ -361,7 +391,7 @@ int main(int argc, char **argv[])
         }
         // wmove(pos, getcury(pos), getcurx(pos)-3);
         // wrefresh(pos);
-        positionDisplay(pos, editor, Screen.curY, Screen.curX, Screen.topLine);
+        positionDisplay(pos, editor, Screen, Screen.curY, Screen.curX, Screen.topLine);
         wrefresh(pos);
         wrefresh(editor);
     }
