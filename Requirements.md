@@ -46,5 +46,9 @@
 ### User presses F8 on the keyboard
 ### Window prompts user for file name. If file already exists or has been saved previously, autofill the file's name while allowing user to change the name if they desire; returning the file name will prompt application to save data to said file and return control to the text editor
 ---
+## FR-11 - Load File
+### User starts program with existing file-path as command line argument
+### Window opens with provided text file loaded into the text editor
+---
 ...
 ...
