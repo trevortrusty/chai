@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <vector>
 #include <string>
+#include <fstream>
 #include "positionDisplay.h"
 #include "splash.h"
 #include "Screen.h"
@@ -15,9 +16,45 @@ int zeroBased(int indexToChange)
     return indexToChange - 1;
 }
 
-
-int main(int argc, char **argv[])
+std::istream& safeGetline(std::istream& is, std::string& t)
 {
+    t.clear();
+
+    // The characters in the stream are read one-by-one using a std::streambuf.
+    // That is faster than reading them one-by-one using the std::istream.
+    // Code that uses streambuf this way must be guarded by a sentry object.
+    // The sentry object performs various tasks,
+    // such as thread synchronization and updating the stream state.
+
+    std::istream::sentry se(is, true);
+    std::streambuf* sb = is.rdbuf();
+
+    for(;;) {
+        int c = sb->sbumpc();
+        switch (c) {
+        case '\n':
+            return is;
+        case '\r':
+            if(sb->sgetc() == '\n')
+                sb->sbumpc();
+            return is;
+        case std::streambuf::traits_type::eof():
+            // Also handle the case when the last line has no line ending
+            if(t.empty())
+                is.setstate(std::ios::eofbit);
+            return is;
+        default:
+            t += (char)c;
+        }
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    std::ifstream file;
+    std::string filename = argc > 1? argv[1] : "";
+    std::string line_from_file;
+
     Screen Screen;
     initscr();
     // getch();
@@ -41,12 +78,7 @@ int main(int argc, char **argv[])
 
     // Create a char matrix to store all input
     std::vector<std::string> lines;
-    std::string line = "";
-
-    // initialize first empty line
-    lines.push_back(line);
-
-
+    std::string line;
 
     // Get screen dimensions
     // int maxY, maxX, winMaxY, winMaxX;
@@ -76,21 +108,74 @@ int main(int argc, char **argv[])
     wsetscrreg(editor, Screen.TOP_SPACING, Screen.maxY - 1);
     // idlok(editor, TRUE);
 
-    WINDOW * pos = newwin(3, 100, Screen.maxY - 1, 4);
-    positionDisplay(pos, editor, Screen, Screen.currentLine, Screen.currentChar, Screen.topLine);
+    if(argc == 1) // no filename provided by user
+    {
+        line = "";
+        // initialize first empty line
+        lines.push_back(line);
+        mvwprintw(editor, Screen.TOP_SPACING,1,"%*d ", 3, Screen.currentLine);
+    }
+    else {
+        try {
+            file.open(filename);
+            if(file.bad())
+            {
+                throw 1;
+            }
+        }
+        catch (int err) {
+            file.close();
+        }
+    }
+    if (file.is_open())
+    {
+        // Initialize at zero to allow pre-incrementing when printing each line out.
+        Screen.currentLine = 0;
+        // Screen.numberOfLines = 0;
+        while (safeGetline(file,line_from_file))
+        {
+            // Screen.numberOfLines++;
+            // Screen.currentLine++;
+            lines.push_back(line_from_file);
+            // mvwprintw(editor, Screen.TOP_SPACING,Screen.currentLine,"%*d ", 3, line_from_file);
+            // mvwprintw(editor, Screen.currentLine + Screen.TOP_SPACING - Screen.topLine, 1, "%*d  %s", 3,  Screen.currentLine, line_from_file.c_str());
+            // mvwprintw(editor, Screen.currentLine + Screen.TOP_SPACING - Screen.topLine, 1, "%*d  %s", 3,  Screen.currentLine, lines[Screen.currentLine - 1].c_str());
+        }
+        file.close();
+        for(std::string l : lines)
+        {
+            Screen.currentLine++;
+            mvwprintw(editor, Screen.currentLine + Screen.TOP_SPACING - Screen.topLine, 1, "%*d  %s", 3,  Screen.currentLine, l.c_str());
+        }
+        Screen.numberOfLines = lines.size();
+        line = lines[Screen.numberOfLines-1]; // Set the current line string
+        Screen.currentChar = lines[Screen.currentLine - 1].length() + 1;
+        timeout(200);
+        getch();
+        timeout(-1);
+        // wrefresh(editor);
+        // wmove(editor, Screen.currentLine + Screen.TOP_SPACING - Screen.topLine, lines[Screen.currentLine - 1].length() + Screen.LEFT_SPACING);
+    }
+    else {
+        // wrefresh(editor);
+        wmove(editor, Screen.TOP_SPACING, Screen.LEFT_SPACING);
+    }
+
     // wrefresh(pos);
 
     // Start line numbering
-    mvwprintw(editor, Screen.TOP_SPACING,1,"%*d ", 3, Screen.currentLine);
+    // mvwprintw(editor, Screen.TOP_SPACING,1,"%*d ", 3, Screen.currentLine);
     // wrefresh(editor);
     // Start text input with a bit of a left + top margin
-    wmove(editor, Screen.TOP_SPACING, Screen.LEFT_SPACING);
-    wrefresh(pos);
+    // wmove(editor, Screen.TOP_SPACING, Screen.LEFT_SPACING);
+    WINDOW * pos = newwin(3, 100, Screen.maxY - 1, 4);
+    positionDisplay(pos, editor, Screen, Screen.currentLine, Screen.currentChar, Screen.topLine);
     wrefresh(editor);
     // Input character
     char ch;
     int c;
-
+    // Screen.keyLeft(editor, Screen, lines, line);
+    // Screen.keyRight(editor, Screen, lines, line);
     while(exit_condition == 0 && (c = getch()))
     {
         switch(c)

@@ -175,7 +175,7 @@ class Screen
 
         void keyEnter(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line, std::string &substringUpToEnter, std::string &substrAfterEnter)
         {
-        // Get cursor position and print line number to the next line
+            // Get cursor position and print line number to the next line
                         // lines[currentLine - 1] = line;
             substringUpToEnter = line.substr(0,Screen.currentChar - 1);
             substrAfterEnter = line.substr(Screen.currentChar - 1);
