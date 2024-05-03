@@ -78,14 +78,15 @@ int main(int argc, char **argv[])
 
     WINDOW * pos = newwin(3, 100, Screen.maxY - 1, 4);
     positionDisplay(pos, editor, Screen, Screen.currentLine, Screen.currentChar, Screen.topLine);
-    wrefresh(pos);
+    // wrefresh(pos);
 
     // Start line numbering
     mvwprintw(editor, Screen.TOP_SPACING,1,"%*d ", 3, Screen.currentLine);
-    wrefresh(editor);
+    // wrefresh(editor);
     // Start text input with a bit of a left + top margin
     wmove(editor, Screen.TOP_SPACING, Screen.LEFT_SPACING);
-
+    wrefresh(pos);
+    wrefresh(editor);
     // Input character
     char ch;
     int c;
@@ -143,6 +144,6 @@ int main(int argc, char **argv[])
     {
         std::cout << lines[i] << std::endl;
     }
-    getch();
+    // getch();
     return 0;
 }

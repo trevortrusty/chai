@@ -31,6 +31,7 @@ class Screen
             numberOfLines = 1;
             currentChar = 1;
             topLine = 1;
+            currentLine = 1; 
         }
 
         void keyUp(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
@@ -233,8 +234,10 @@ class Screen
                 wmove(editor, Screen.curY, LEFT_SPACING);
             }
             wmove(editor, Screen.curY, LEFT_SPACING);
-            wclrtoeol(editor);
-            wclrtobot(editor);
+            if(substrAfterEnter != "")
+                wclrtoeol(editor); // these two lines are causing a bug if you hit enter first after opening a file/new file
+            if(numberOfLines > currentLine)
+                wclrtobot(editor);
             Screen.printToLine = Screen.numberOfLines < Screen.winMaxY ? Screen.numberOfLines : Screen.winMaxY;
             for(int i = Screen.curY - 1; i < Screen.printToLine; i++)
             {
