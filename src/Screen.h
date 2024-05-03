@@ -21,6 +21,18 @@ class Screen
         int topLine = 1;        // Keeps track of the top visible line when scrolling
         int printToLine;        // Keeps track of where to stop reprinting lines, when a reprint is necessary
 
+        Screen()
+        {
+            propsDefaultValues();
+        }
+
+        void propsDefaultValues()
+        {
+            numberOfLines = 1;
+            currentChar = 1;
+            topLine = 1;
+        }
+
         void keyUp(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
         {
             lines[Screen.currentLine - 1] = line;
