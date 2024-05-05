@@ -19,6 +19,7 @@ class Screen
         int currentLine = 1;    // Line the cursor is on within the text editor
         int currentChar = 1;    // Char/space the cursor is on within the line
         int topLine = 1;        // Keeps track of the top visible line when scrolling
+        int bottomLine = 1;     // Keeps track of the bottom visible line when scrolling
         int printToLine;        // Keeps track of where to stop reprinting lines, when a reprint is necessary
 
         Screen()
@@ -31,7 +32,32 @@ class Screen
             numberOfLines = 1;
             currentChar = 1;
             topLine = 1;
+            bottomLine = 1;
             currentLine = 1; 
+        }
+
+        void moveToStart(WINDOW * editor)
+        {
+
+        }
+
+        void reprintVisible(WINDOW * editor, std::vector<std::string> lines)
+        {
+            // wmove();
+            wclear(editor);
+            int line_number;
+            // for(int i = topLine - 1; i < numberOfLines; i++)
+            // {
+            //     mvwprintw(editor, 1, 1, "%*d  %s", 3,  i + topLine, lines[i + topLine - 1].c_str());
+            // }
+            // printToLine = numberOfLines < winMaxY ? numberOfLines : winMaxY;
+            // printToLine = bottomLine - (topLine - 2);
+            printToLine = bottomLine - (topLine - 1);
+            for(int i = TOP_SPACING; i < printToLine + TOP_SPACING; i++)
+            {
+                line_number = topLine + (i - TOP_SPACING);
+                mvwprintw(editor, i, 1, "%*d  %s", 3,  line_number, lines[line_number - 1].c_str());
+            }
         }
 
         void keyUp(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
@@ -83,6 +109,7 @@ class Screen
                         wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
                     }
                     line = lines[Screen.currentLine - 1];
+                    bottomLine--;
                 }
                 else
                 {
@@ -95,9 +122,9 @@ class Screen
 
         void keyDown(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
         {
-        lines[Screen.currentLine - 1] = line;
+            lines[Screen.currentLine - 1] = line;
             getmaxyx(editor, Screen.winMaxY, Screen.winMaxX);
-            if(Screen.currentLine < Screen.winMaxY)
+            if(Screen.currentLine < bottomLine || (bottomLine - topLine) + 1 != winMaxY)
             {
                 if(Screen.currentLine != Screen.numberOfLines)
                 {
@@ -142,6 +169,7 @@ class Screen
                         wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
                     }
                     line = lines[Screen.currentLine - 1];
+                    bottomLine++;
                 }
                 else
                 {
@@ -175,6 +203,13 @@ class Screen
 
         void keyEnter(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line, std::string &substringUpToEnter, std::string &substrAfterEnter)
         {
+
+            // reprintVisible(editor, lines);
+
+
+
+            // pasting old code and changing it
+            // Note to self. Maybe rewrite the whole damn thing. AHHHHHHHHHHHHHHHH
             // Get cursor position and print line number to the next line
                         // lines[currentLine - 1] = line;
             substringUpToEnter = line.substr(0,Screen.currentChar - 1);
@@ -185,7 +220,10 @@ class Screen
             getyx(editor, Screen.curY, Screen.curX);
             int editorMaxY, editorMaxX;
             getmaxyx(editor, editorMaxY, editorMaxX);
-
+            if(bottomLine < editorMaxY)
+            {
+                bottomLine++;
+            }
             // Checks if space is available on the visible screen to start new line
             if(Screen.currentLine < editorMaxY)
             {
@@ -232,24 +270,36 @@ class Screen
                 getyx(editor, Screen.curY, Screen.curX);
                 wrefresh(editor);
                 wmove(editor, Screen.curY, LEFT_SPACING);
+                bottomLine++;
             }
-            wmove(editor, Screen.curY, LEFT_SPACING);
-            if(substrAfterEnter != "")
-                wclrtoeol(editor); // these two lines are causing a bug if you hit enter first after opening a file/new file
-            if(numberOfLines > currentLine)
-                wclrtobot(editor);
-            Screen.printToLine = Screen.numberOfLines < Screen.winMaxY ? Screen.numberOfLines : Screen.winMaxY;
-            for(int i = Screen.curY - 1; i < Screen.printToLine; i++)
-            {
-                mvwprintw(editor, i, 1, "%*d  %s", 3,  i + 1, lines[i].c_str());
-            }
+            //wmove(editor, Screen.curY, LEFT_SPACING);
+            // if(substrAfterEnter != "")
+            //     wclrtoeol(editor); // these two lines are causing a bug if you hit enter first after opening a file/new file
+            // if(numberOfLines > currentLine)
+            //     wclrtobot(editor);
+            // wclrtoeol(editor); // these two lines are causing a bug if you hit enter first after opening a file/new file
+            // wclrtobot(editor);
+            // Screen.printToLine = Screen.numberOfLines < Screen.winMaxY ? Screen.numberOfLines : Screen.winMaxY;
+            // for(int i = Screen.curY - 1; i < Screen.printToLine; i++)
+            // {
+            //     mvwprintw(editor, i, 1, "%*d  %s", 3,  i + topLine, lines[i + topLine - 1].c_str());
+            // }
+            reprintVisible(editor, lines);
             wrefresh(editor);
             // currentChar = lines[currentLine - 1].length() + 1;
             wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
         }
 
-        void keyCharPrint(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line, std::string &substringUpToEnter, std::string &substrAfterEnter, int &c)
+        int keyCharPrint(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line, std::string &substringUpToEnter, std::string &substrAfterEnter, int &c)
         {
+            // Temporary measure to prevent typing offscreen until true left-right scrolling is implemented
+            getmaxyx(editor, Screen.winMaxY, Screen.winMaxX);
+            if(currentChar == Screen.winMaxX - LEFT_SPACING)
+            {
+                beep();
+                return -1;
+            }
+
             // line = line + (char)c;
             getmaxyx(editor, Screen.winMaxY, Screen.winMaxX);
             line.insert(line.begin() + Screen.currentChar - 1, (char)c);
@@ -260,6 +310,8 @@ class Screen
             getyx(editor, Screen.curY, Screen.curX);
             wmove(editor, Screen.curY, Screen.curX + 1);
             lines[Screen.currentLine - 1] = line;
+
+            return 0;
         }
 
         void keyBackspace(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)

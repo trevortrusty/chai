@@ -4,6 +4,6 @@
 #include <ncurses.h>
 #include "Screen.h"
 
-int positionDisplay(WINDOW * win, WINDOW * editor, Screen &Screen, int &cursorY, int &cursorX, int topLine);
+int positionDisplay(WINDOW * win, WINDOW * editor, Screen &Screen, int &cursorY, int &cursorX, int topLine,int bottomLine);
 
 #endif

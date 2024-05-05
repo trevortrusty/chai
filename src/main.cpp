@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <algorithm>
 #include "positionDisplay.h"
 #include "splash.h"
 #include "Screen.h"
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
     // getch();
     noecho();
     // cbreak();
-    keypad(stdscr, true);
+    // keypad(stdscr, true);
     move(0,0);
     int exit_condition = 0;
 
@@ -86,8 +87,8 @@ int main(int argc, char *argv[])
 
     WINDOW *editor = newwin(Screen.maxY - 3, Screen.maxX - 3, 1, 1);
     // box(editor, 0, 0);
-    wrefresh(editor);
-
+    // wrefresh(editor);
+    keypad(editor, true);
     // Initialize cursor position
     // int y, x;
     Screen.curY = Screen.curX = 0;
@@ -132,7 +133,7 @@ int main(int argc, char *argv[])
         // Initialize at zero to allow pre-incrementing when printing each line out.
         Screen.currentLine = 0;
         // Screen.numberOfLines = 0;
-        while (safeGetline(file,line_from_file))
+        while (getline(file,line_from_file))
         {
             // Screen.numberOfLines++;
             // Screen.currentLine++;
@@ -148,8 +149,14 @@ int main(int argc, char *argv[])
             mvwprintw(editor, Screen.currentLine + Screen.TOP_SPACING - Screen.topLine, 1, "%*d  %s", 3,  Screen.currentLine, l.c_str());
         }
         Screen.numberOfLines = lines.size();
-        line = lines[Screen.numberOfLines-1]; // Set the current line string
-        Screen.currentChar = lines[Screen.currentLine - 1].length() + 1;
+        // Screen.bottomLine = Screen.maxY - 1 - Screen.TOP_SPACING;
+        // Screen.bottomLine = Screen.numberOfLines - Screen.topLine  + 1;
+        // Screen.bottomLine = Screen.numberOfLines - Screen.topLine  + 1;
+        getmaxyx(editor, Screen.winMaxY, Screen.winMaxX);
+        Screen.bottomLine = std::min(Screen.winMaxY, Screen.numberOfLines);
+
+        // line = lines[0]; // Set the current line string
+        //Screen.currentChar = lines[Screen.currentLine - 1].length() + 1;
         timeout(200);
         getch();
         timeout(-1);
@@ -160,7 +167,10 @@ int main(int argc, char *argv[])
         // wrefresh(editor);
         wmove(editor, Screen.TOP_SPACING, Screen.LEFT_SPACING);
     }
-
+    Screen.currentLine = 1;
+    Screen.currentChar = 1;
+    line = lines[Screen.currentLine - 1]; // Set the current line string
+    wmove(editor, Screen.currentLine + Screen.TOP_SPACING - Screen.topLine, Screen.currentChar + Screen.LEFT_SPACING - 1);
     // wrefresh(pos);
 
     // Start line numbering
@@ -169,14 +179,14 @@ int main(int argc, char *argv[])
     // Start text input with a bit of a left + top margin
     // wmove(editor, Screen.TOP_SPACING, Screen.LEFT_SPACING);
     WINDOW * pos = newwin(3, 100, Screen.maxY - 1, 4);
-    positionDisplay(pos, editor, Screen, Screen.currentLine, Screen.currentChar, Screen.topLine);
+    positionDisplay(pos, editor, Screen, Screen.currentLine, Screen.currentChar, Screen.topLine, Screen.bottomLine);
     wrefresh(editor);
     // Input character
     char ch;
     int c;
     // Screen.keyLeft(editor, Screen, lines, line);
     // Screen.keyRight(editor, Screen, lines, line);
-    while(exit_condition == 0 && (c = getch()))
+    while(exit_condition == 0 && (c = wgetch(editor)))
     {
         switch(c)
         {
@@ -216,7 +226,7 @@ int main(int argc, char *argv[])
         }
         // wmove(pos, getcury(pos), getcurx(pos)-3);
         // wrefresh(pos);
-        positionDisplay(pos, editor, Screen, Screen.curY, Screen.curX, Screen.topLine);
+        positionDisplay(pos, editor, Screen, Screen.curY, Screen.curX, Screen.topLine, Screen.bottomLine);
         wrefresh(pos);
         wrefresh(editor);
     }
