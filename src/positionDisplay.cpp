@@ -2,17 +2,11 @@
 #include <string>
 #include "Screen.h"
 
-int positionDisplay(WINDOW * win, WINDOW * editor, Screen &Screen, int &cursorY, int &cursorX, int topLine, int bottomLine)
+int positionDisplay(WINDOW * win, WINDOW * editor, Screen &Screen)
 {
-    int scrY, scrX, maxY, maxX;
-    getyx(editor, scrY, scrX);
-    getmaxyx(editor, maxY, maxX);
-    // WINDOW * pos = newwin(3, 3, maxY - 20, 4);
     wclrtoeol(win); // Clear the entire line
     box(win, 0, 0);
-    // std::string positionText = std::to_string(cursorY) + "," + std::to_string(cursorX) + "          " + std::to_string(scrY) + ", " + std::to_string(scrX) + "          " + std::to_string(maxY) + ", " + std::to_string(maxX) + "        Top Line: " + std::to_string(topLine);
-    std::string positionText = std::to_string(Screen.currentLine) + "," + std::to_string(Screen.currentChar) + "          " + std::to_string(scrY) + ", " + std::to_string(scrX) + "          " + std::to_string(maxY) + ", " + std::to_string(maxX) + "        Top Line, Bottom Line: " + std::to_string(topLine) + ", " + std::to_string(bottomLine) + "/" + std::to_string(Screen.numberOfLines) ;
-    // wprintw(win, "%d,%d", cursorY, cursorX);
+    std::string positionText = std::to_string(Screen.getCurrentLinePos()) + "," + std::to_string(Screen.getCurrentCharPos()) + "          " + std::to_string(Screen.getCurY(editor)) + ", " + std::to_string(Screen.getCurX(editor)) + "          " + std::to_string(Screen.getMaxEditorY(editor)) + ", " + std::to_string(Screen.getMaxEditorX(editor)) + "        Top Line, Bottom Line: " + std::to_string(Screen.getTopLinePos()) + ", " + std::to_string(Screen.getBottomLinePos()) + "/" + std::to_string(Screen.getNumberOfLines()) ;
     wprintw(win, positionText.c_str());
     wrefresh(win);
     wmove(win, getcury(win), getcurx(win)-positionText.length());
