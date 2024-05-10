@@ -1,11 +1,11 @@
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef TEXTEDITOR_H
+#define TEXTEDITOR_H
 
 #include <ncurses.h>
 #include <vector>
 #include <string>
 
-class Screen
+class TextEditor
 {
     private:
         int maxY, maxX;         // Max cursor positions for entire terminal (stdscr)
@@ -16,11 +16,13 @@ class Screen
         int currentChar = 1;    // Char/space the cursor is on within the line
         int topLine = 1;        // Keeps track of the top visible line when scrolling
         int bottomLine = 1;     // Keeps track of the bottom visible line when scrolling
+        std::vector<std::string> lines;
+        std::string line;
 
     public:        
         const int TOP_SPACING = 0;
         const int LEFT_SPACING = 6;
-        Screen()
+        TextEditor()
         {
             propsDefaultValues();
         }
@@ -33,6 +35,41 @@ class Screen
             bottomLine = 1;
             currentLine = 1;
             curY = curX = 0;
+        }
+
+        void pushLine(std::string l)
+        {
+            lines.push_back(l);
+        }
+
+        void pushLine()
+        {
+            lines.push_back(line);
+        }
+
+        void setEmptyLineBuffer()
+        {
+            line = "";
+        }
+
+        void setLineBuffer(std::string s)
+        {
+            line = s;
+        }
+
+        std::string lineAt(int i)
+        {
+            return lines[i];
+        }
+
+        void selectLineByCursor()
+        {
+            line = lines[getCurrentLinePos() - 1]; // Set the current line string
+        }
+
+        std::vector<std::string> getAllLines() const
+        {
+            return lines;
         }
 
         int autoSetTermDimensions()
@@ -213,7 +250,7 @@ class Screen
             return 0;
         }
 
-        void reprintVisible(WINDOW * editor, std::vector<std::string> lines)
+        void reprintVisible(WINDOW * editor)
         {
             wclear(editor);
             int line_number;
@@ -225,7 +262,7 @@ class Screen
             }
         }
 
-        void keyUp(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+        void keyUp(WINDOW * editor)
         {
             lines[getCurrentLinePos() - 1] = line;
             if(getCurrentLinePos() > getTopLinePos())
@@ -236,7 +273,7 @@ class Screen
                     if(getCurrentCharPos() > lines[getCurrentLinePos() - 1].length())
                     {
                         setCurrentCharPos(lines[getCurrentLinePos() - 1].length() + 1);
-                        wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), lines[Screen.getCurrentLinePos() - 1].length() + LEFT_SPACING);
+                        wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), lines[getCurrentLinePos() - 1].length() + LEFT_SPACING);
                     }
                     else {
                         wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), getCurrentCharPos() + LEFT_SPACING - 1);
@@ -246,12 +283,12 @@ class Screen
                 else
                 {
                     // Can't move up any farther, move cursor to beginning of current line
-                    Screen.currentChar = 1;
+                    setCurrentCharPos(1);
                     wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), LEFT_SPACING);
                 }
             }
             else {
-                if(Screen.currentLine > 1)
+                if(currentLine > 1)
                 {
                     decTopLinePos();
                     wscrl(editor, -1); // Scroll the window up by one line
@@ -265,8 +302,8 @@ class Screen
                     if(getCurrentCharPos() > lines[getCurrentLinePos() - 1].length())
                     {
                         // Screen.currentChar = lines[Screen.currentLine - 1].length() + 1;
-                        setCurrentCharPos(lines[Screen.currentLine - 1].length() + 1);
-                        wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, lines[Screen.currentLine - 1].length() + LEFT_SPACING);
+                        setCurrentCharPos(lines[getCurrentLinePos() - 1].length() + 1);
+                        wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), lines[getCurrentLinePos() - 1].length() + LEFT_SPACING);
                     }
                     else {
                         wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), getCurrentCharPos() + LEFT_SPACING - 1);
@@ -283,12 +320,12 @@ class Screen
             }
         }
 
-        void keyDown(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+        void keyDown(WINDOW * editor)
         {
             lines[getCurrentLinePos() - 1] = line;
-            if(getCurrentLinePos() < bottomLine || (bottomLine - topLine) + 1 != winMaxY)
+            if(getCurrentLinePos() < getBottomLinePos() || (getBottomLinePos() - getTopLinePos() + 1 != getMaxEditorY(editor)))
             {
-                if(getCurrentLinePos() != Screen.numberOfLines)
+                if(getCurrentLinePos() != getNumberOfLines())
                 {
                     incCurrentLinePos();
                     // Check if the next line down is shorter than the current line. 
@@ -320,7 +357,7 @@ class Screen
 
                     // Check if the next line down is shorter than the current line. 
                     // If it is shorter, cursor moves to end of the next line in order to stay in bounds
-                    if(Screen.currentChar > lines[Screen.currentLine - 1].length())
+                    if(currentChar > lines[currentLine - 1].length())
                     {
                         setCurrentCharPos(lines[getCurrentLinePos() - 1].length() + 1);
                         wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), lines[getCurrentLinePos() - 1].length() + LEFT_SPACING);
@@ -340,28 +377,28 @@ class Screen
             }
         }
 
-        void keyLeft(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+        void keyLeft(WINDOW * editor)
         {
             if(getCurrentCharPos() != 1)
             {
                 decCurrentCharPos();
-                wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
+                wmove(editor, getCurrentLinePos() + TOP_SPACING - topLine, getCurrentCharPos() + LEFT_SPACING - 1);
             }
             else {
-                wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
+                wmove(editor, getCurrentLinePos() + TOP_SPACING - topLine, getCurrentCharPos() + LEFT_SPACING - 1);
             }
         }
 
-        void keyRight(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+        void keyRight(WINDOW * editor)
         {
             if(getCurrentCharPos() <= line.length())
             {
-                Screen.currentChar++;
+                currentChar++;
                 wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), getCurrentCharPos() + LEFT_SPACING - 1);
             }
         }
 
-        void keyEnter(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line, std::string &substringUpToEnter, std::string &substrAfterEnter)
+        void keyEnter(WINDOW * editor, std::string &substringUpToEnter, std::string &substrAfterEnter)
         {
             
             // Get cursor position and print line number to the next line
@@ -387,7 +424,7 @@ class Screen
                 incCurrentLinePos();
                 setCurrentCharPos(1);
                 incNumberOfLines();
-                mvwprintw(editor, getNumberOfLines() + TOP_SPACING - 1, 1, "%*d", 3,  Screen.numberOfLines);
+                mvwprintw(editor, getNumberOfLines() + TOP_SPACING - 1, 1, "%*d", 3,  numberOfLines);
                 wrefresh(editor);
                 wmove(editor, getCurY(editor) + 1, LEFT_SPACING);
             }
@@ -401,20 +438,20 @@ class Screen
                     lines.insert(lines.begin() + (getCurrentLinePos()), line);
                 }
                 incCurrentLinePos();
-                incCurrentCharPos();
+                setCurrentCharPos(1);
                 incNumberOfLines();
-                incTopLinePos();           // update which line is seen at the top of the window
+                incTopLinePos();            // update which line is seen at the top of the window
                 wscrl(editor, 1);           // Scroll the window down by one line
                 wrefresh(editor);
                 wmove(editor, getCurY(editor), LEFT_SPACING);
                 incBottomLinePos();
             }
-            reprintVisible(editor, lines);
+            reprintVisible(editor);
             wrefresh(editor);
-            wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
+            wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), getCurrentCharPos() + LEFT_SPACING - 1);
         }
 
-        int keyCharPrint(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line, std::string &substringUpToEnter, std::string &substrAfterEnter, int &c)
+        int keyCharPrint(WINDOW * editor, std::string &substringUpToEnter, std::string &substrAfterEnter, int &c)
         {
             // Temporary measure to prevent typing offscreen until true left-right scrolling is implemented
             if(getCurrentCharPos() == getMaxEditorX(editor) - LEFT_SPACING)
@@ -427,32 +464,32 @@ class Screen
             winsch(editor, (char)c);
             wrefresh(editor);
             wmove(editor, getCurY(editor), getCurX(editor) + 1);
-            lines[Screen.currentLine - 1] = line;
+            lines[getCurrentLinePos() - 1] = line;
 
             return 0;
         }
 
-        void keyBackspace(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+        void keyBackspace(WINDOW * editor)
         {
-            if(Screen.currentChar > 1)
+            if(currentChar > 1)
             {
-                Screen.currentChar--;
-                line.erase(Screen.currentChar - 1, 1);
-                lines[Screen.currentLine - 1].erase(Screen.currentChar - 1, 1);
-                wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, LEFT_SPACING);
+                currentChar--;
+                line.erase(currentChar - 1, 1);
+                lines[currentLine - 1].erase(currentChar - 1, 1);
+                wmove(editor, currentLine + TOP_SPACING - topLine, LEFT_SPACING);
                 wclrtoeol(editor);
 
-                mvwprintw(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, 1, "%*d  %s", 3,  Screen.currentLine, lines[Screen.currentLine - 1].c_str());
+                mvwprintw(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), 1, "%*d  %s", 3,  getCurrentLinePos(), lines[getCurrentLinePos() - 1].c_str());
                 wrefresh(editor);
                 
-                wmove(editor, Screen.currentLine + TOP_SPACING - Screen.topLine, Screen.currentChar + LEFT_SPACING - 1);
+                wmove(editor, getCurrentLinePos() + TOP_SPACING - getTopLinePos(), getCurrentCharPos() + LEFT_SPACING - 1);
             }
             else {
                 beep();
             }
         }
 
-        void keyTab(WINDOW * editor, Screen &Screen, std::vector<std::string> &lines, std::string &line)
+        void keyTab(WINDOW * editor)
         {
             line.insert(line.begin() + getCurrentCharPos() - 1, 4, ' '); // 4 Spaces
             incCurrentCharPos(4);
@@ -462,7 +499,7 @@ class Screen
             }
             wrefresh(editor);
             wmove(editor, getCurY(editor), getCurX(editor) + 4);
-            lines[Screen.currentLine - 1] = line;
+            lines[getCurrentLinePos() - 1] = line;
         }
 };
 
