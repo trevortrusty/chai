@@ -16,6 +16,7 @@ class TextEditor
         int currentChar = 1;    // Char/space the cursor is on within the line
         int topLine = 1;        // Keeps track of the top visible line when scrolling
         int bottomLine = 1;     // Keeps track of the bottom visible line when scrolling
+        int charLineStart;      // Left-most visible char on screen, changes when user needs to see part of current line that is off-screen
         std::vector<std::string> lines;
         std::string line;
 
@@ -34,6 +35,7 @@ class TextEditor
             topLine = 1;
             bottomLine = 1;
             currentLine = 1;
+            charLineStart = 0; // zero-based
             curY = curX = 0;
         }
 
@@ -120,9 +122,23 @@ class TextEditor
             return curX;
         }
 
+        // Move cursor to beginning of file
         void moveToStart(WINDOW * editor)
         {
 
+        }
+
+        // Move cursor to beginning of line
+        void moveToHome(WINDOW * editor)
+        {
+            wmove(editor, getCurY(editor) + 1, LEFT_SPACING);
+            setCurrentCharPos(1);
+        }
+
+        // Move cursor to end of line
+        void moveToEnd(WINDOW * editor)
+        {
+            
         }
 
         int getNumberOfLines()
@@ -456,8 +472,21 @@ class TextEditor
             // Temporary measure to prevent typing offscreen until true left-right scrolling is implemented
             if(getCurrentCharPos() == getMaxEditorX(editor) - LEFT_SPACING)
             {
-                beep();
-                return -1;
+                bool testingLineScrolling = false;
+                if(!testingLineScrolling)
+                {
+                    beep();
+                    return -1;
+                }
+                charLineStart++;
+                // moveToHome(editor);
+
+                // Clear the line
+                wmove(editor, getCurY(editor) + 1, LEFT_SPACING);
+                wclrtoeol(editor);
+
+                // reprint shifted line
+                return 0;
             }
             line.insert(line.begin() + getCurrentCharPos() - 1, (char)c);
             incCurrentCharPos();
