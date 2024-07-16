@@ -163,9 +163,16 @@ int main(int argc, char *argv[])
     delwin(pos);
     endwin();
 
+
+    std::ofstream file_out;
+    file_out.open ("test.txt", std::ofstream::out | std::ofstream::app);
     for(int i = 0; i < TE.getAllLines().size(); i++)
     {
-        std::cout << TE.lineAt(i) << std::endl;
+        // std::cout << TE.lineAt(i) << std::endl; // Uncomment for debugging (print file contents to console upon exit)
+        file_out << TE.lineAt(i) << std::endl;
     }
+    
+    file_out.close();
+
     return 0;
 }
